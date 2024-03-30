@@ -32,17 +32,17 @@ impl PgDbPool {
     }
     pub fn new() -> Self {
         let manager = ConnectionManager::<PgConnection>::new(Self::build_database_url());
-
-        Self {
-            pool: Pool::builder()
+        let pool = Pool::builder()
                 .test_on_check_out(true)
                 .build(manager)
-                .unwrap_or_else(|error| panic!("Could not build connection pool: {}", error)),
+                .unwrap_or_else(|error| panic!("Could not build connection pool: {}", error));
+        Self {
+            pool,
         }
     }
 
     pub fn get_connection(self) -> PooledConnection<ConnectionManager<PgConnection>>{
-        match self.pool.get() {
+        match self.pool.clone().get() {
             Ok(conn) => conn,
             Err(err) => panic!("Error getting connection from pool: {}", err)
         } 

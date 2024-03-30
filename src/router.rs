@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{modules::todos, ApplicationState};
 
 use axum::{
@@ -5,7 +7,7 @@ use axum::{
     Router,
 };
 
-pub fn todos_router() -> Router<ApplicationState> {
+pub fn todos_router() -> Router<Arc<ApplicationState>> {
     let router = Router::new()
         .route("/:id", get(todos::controllers::get))
         .route("/", get(todos::controllers::list))

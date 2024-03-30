@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use super::{service::TodoService, views};
 use crate::views::errors::from_error_kind;
 use crate::{
@@ -23,7 +25,7 @@ pub struct TodoRequest {
 }
 
 pub async fn get(
-    State(state): State<ApplicationState>,
+    State(state): State<Arc<ApplicationState>>,
     id: Result<Path<i32>, PathRejection>,
 ) -> (StatusCode, impl IntoResponse) {
     match id {
@@ -55,7 +57,7 @@ pub async fn get(
     }
 }
 
-pub async fn list(State(state): State<ApplicationState>) -> (StatusCode, impl IntoResponse) {
+pub async fn list(State(state): State<Arc<ApplicationState>>) -> (StatusCode, impl IntoResponse) {
     let todo_service = TodoService::new(state);
     let mut todos: Vec<views::Todo> = vec![];
 
@@ -77,7 +79,7 @@ pub async fn list(State(state): State<ApplicationState>) -> (StatusCode, impl In
 }
 
 pub async fn post(
-    State(state): State<ApplicationState>,
+    State(state): State<Arc<ApplicationState>>,
     Json(request): Json<TodoRequest>,
 ) -> (StatusCode, impl IntoResponse) {
     let todo_service = TodoService::new(state);

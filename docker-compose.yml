@@ -6,6 +6,7 @@ services:
     container_name: todo_axum
     ports:
       - "3000:3000"
+    restart: always
   db:
     container_name: todo_axum_db
     image: postgres:16.2-alpine3.18

@@ -4,6 +4,7 @@ mod modules;
 mod router;
 mod schema;
 mod views;
+mod utils;
 
 use std::sync::Arc;
 

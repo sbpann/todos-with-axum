@@ -37,11 +37,11 @@ impl PgDbPool {
                 .build(manager)
                 .unwrap_or_else(|error| panic!("Could not build connection pool: {}", error));
         Self {
-            pool,
+            pool: pool,
         }
     }
 
-    pub fn get_connection(self) -> PooledConnection<ConnectionManager<PgConnection>>{
+    pub fn new_connection(&self) -> PooledConnection<ConnectionManager<PgConnection>>{
         match self.pool.clone().get() {
             Ok(conn) => conn,
             Err(err) => panic!("Error getting connection from pool: {}", err)

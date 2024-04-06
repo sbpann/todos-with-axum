@@ -2,19 +2,19 @@ mod configs;
 mod constants;
 mod modules;
 mod router;
-mod schema;
-mod views;
 mod utils;
+mod views;
 
 use std::sync::Arc;
 
 use axum::Router;
-use configs::db::PgDbPool;
+use configs::db::new_pg_pool;
 use dotenvy::dotenv;
+use sqlx::Postgres;
 
 #[derive(Clone)]
 pub struct ApplicationState {
-    db_pool: PgDbPool,
+    db_pool: sqlx::Pool<Postgres>,
 }
 
 #[tokio::main]
@@ -22,7 +22,7 @@ async fn main() {
     dotenv().ok();
 
     let state = Arc::new(ApplicationState {
-        db_pool: PgDbPool::new(),
+        db_pool: new_pg_pool().await,
     });
     let app = Router::new()
         .nest("/todos", router::todos_router())

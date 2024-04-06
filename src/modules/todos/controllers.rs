@@ -1,3 +1,4 @@
+use std::cmp;
 use std::sync::Arc;
 
 use super::{service::TodoService, views};
@@ -8,6 +9,8 @@ use crate::{
     },
     ApplicationState,
 };
+use axum::body::Body;
+use axum::extract::Query;
 use axum::{
     extract::{rejection::PathRejection, Path, State},
     http::StatusCode,
@@ -20,6 +23,12 @@ use serde::Deserialize;
 pub struct TodoRequest {
     title: String,
     content: String,
+}
+
+#[derive(Deserialize)]
+pub struct Pagination {
+    limit: Option<i64>,
+    offset: Option<i64>,
 }
 
 pub async fn get(
@@ -35,8 +44,10 @@ pub async fn get(
 
     let todo_service = TodoService::new(state);
 
-    match todo_service.find(id) {
-        Err(_) => return GENERIC_NOT_FOUND_ERROR_RESPONSE.into_response(),
+    match todo_service.find(id).await {
+        Err(_) => {
+            return GENERIC_NOT_FOUND_ERROR_RESPONSE.into_response();
+        }
         Ok(todo) => {
             let view = views::Todo {
                 id: todo.id,
@@ -48,25 +59,41 @@ pub async fn get(
     }
 }
 
-pub async fn list(State(state): State<Arc<ApplicationState>>) -> (StatusCode, impl IntoResponse) {
+pub async fn list(
+    State(state): State<Arc<ApplicationState>>,
+    Query(pagination): Query<Pagination>,
+) -> (StatusCode, impl IntoResponse) {
+    let limit = cmp::min(pagination.limit.unwrap_or(10), 10);
+    let offset = pagination.offset.unwrap_or(0);
+
     let todo_service = TodoService::new(state);
     let mut todos: Vec<views::Todo> = vec![];
+    let total: i64;
 
-    match todo_service.list() {
+    match todo_service.list(limit, offset).await {
         Err(_) => return GENERIC_INTERNAL_SERVER_ERROR_RESPONSE.into_response(),
         Ok(list) => {
+            total = list[0].total.unwrap_or(0);
             for todo in list.iter() {
-                let todo_clone = todo.clone();
                 todos.push(views::Todo {
                     id: todo.id,
-                    title: todo_clone.title,
-                    content: todo_clone.content,
+                    title: todo.title.to_string(),
+                    content: todo.content.to_string(),
                 });
             }
         }
     }
 
-    (StatusCode::OK, Json(views::Todos { todos }).into_response())
+    (
+        StatusCode::OK,
+        Json(crate::views::pagination::Pagination {
+            limit: limit,
+            offset: offset,
+            total: total,
+            items: todos,
+        })
+        .into_response(),
+    )
 }
 
 pub async fn post(
@@ -75,7 +102,7 @@ pub async fn post(
 ) -> (StatusCode, impl IntoResponse) {
     let todo_service = TodoService::new(state);
 
-    match todo_service.create(&request.title, &request.content) {
+    match todo_service.create(&request.title, &request.content).await {
         Err(_) => return GENERIC_INTERNAL_SERVER_ERROR_RESPONSE.into_response(),
         Ok(todo) => {
             let view = views::Todo {
@@ -101,12 +128,14 @@ pub async fn put(
     };
 
     let todo_service = TodoService::new(state);
-    let result = todo_service.find(id);
+    let result = todo_service.find(id).await;
 
     match result {
         Err(_) => GENERIC_NOT_FOUND_ERROR_RESPONSE.into_response(),
         Ok(todo) => {
-            let updated_todo = match todo_service.update(todo.id, &request.title, &request.content)
+            let updated_todo = match todo_service
+                .update(todo.id, &request.title, &request.content)
+                .await
             {
                 Err(_) => return GENERIC_INTERNAL_SERVER_ERROR_RESPONSE.into_response(),
                 Ok(updated_todo) => updated_todo,
@@ -118,6 +147,34 @@ pub async fn put(
                 content: updated_todo.content,
             };
             (StatusCode::OK, Json(view).into_response())
+        }
+    }
+}
+pub async fn delete(
+    State(state): State<Arc<ApplicationState>>,
+    id: Result<Path<i32>, PathRejection>,
+) -> (StatusCode, impl IntoResponse) {
+    let id = match id {
+        Err(path_rejection_error) => {
+            return build_response_from_path_rejection("id", path_rejection_error)
+        }
+        Ok(value) => value.0,
+    };
+
+    let todo_service = TodoService::new(state);
+    let find_result = match todo_service.find(id).await {
+       Err(_) => return GENERIC_NOT_FOUND_ERROR_RESPONSE.into_response(),
+       Ok(result) => result
+    };
+
+
+    match todo_service.delete(find_result.id).await {
+        Err(_) => GENERIC_INTERNAL_SERVER_ERROR_RESPONSE.into_response(),
+        Ok(pg_query_result) => {
+            if pg_query_result.rows_affected() != 1_u64 {
+                return GENERIC_INTERNAL_SERVER_ERROR_RESPONSE.into_response();
+            }
+            (StatusCode::NO_CONTENT, Body::empty().into_response())
         }
     }
 }

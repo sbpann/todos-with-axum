@@ -1,15 +1,12 @@
 use std::sync::Arc;
 
-use diesel::{
-    r2d2::{ConnectionManager, PooledConnection},
-    ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl, SelectableHelper,
-};
+use sqlx::{postgres::PgQueryResult, Postgres};
 
 use super::models;
-use crate::{configs::db::PgDbPool, schema, ApplicationState};
+use crate::ApplicationState;
 
 pub struct TodoService {
-    db_pool: PgDbPool,
+    db_pool: sqlx::Pool<Postgres>,
 }
 impl TodoService {
     pub fn new(state: Arc<ApplicationState>) -> Self {
@@ -18,51 +15,70 @@ impl TodoService {
         };
     }
 
-    pub fn find(&self, id: i32) -> Result<models::Todo, diesel::result::Error> {
-        let result: Result<models::Todo, diesel::result::Error> = schema::todos::dsl::todos
-            .find(id)
-            .select(models::Todo::as_select())
-            .first(&mut self.new_pooled_conn());
+    pub async fn find(&self, id: i32) -> Result<models::Todo, sqlx::Error> {
+        let query_result = sqlx::query_as::<_, models::Todo>("SELECT * FROM todos WHERE id = $1;")
+            .bind(id)
+            .fetch_one(&self.db_pool)
+            .await;
 
-        result
+        query_result
     }
 
-    pub fn create(
+    pub async fn create(&self, title: &str, content: &str) -> Result<models::Todo, sqlx::Error> {
+        let query_result = sqlx::query_as::<_, models::Todo>(
+            "INSERT INTO todos (title, content) VALUES ($1, $2) RETURNING *;",
+        )
+        .bind(title)
+        .bind(content)
+        .fetch_one(&self.db_pool)
+        .await;
+
+        query_result
+    }
+
+    pub async fn list(
         &self,
-        title: &str,
-        content: &str,
-    ) -> Result<models::Todo, diesel::result::Error> {
-        let new_todo: models::NewTodo<'_> = models::NewTodo { title, content };
-        let result: Result<models::Todo, diesel::result::Error> =
-            diesel::insert_into(schema::todos::table)
-                .values(&new_todo)
-                .returning(models::Todo::as_returning())
-                .get_result(&mut self.new_pooled_conn());
-        result
+        limit: i64,
+        offset: i64,
+    ) -> Result<Vec<models::Todo>, sqlx::Error> {
+
+        let query_result = 
+        sqlx::query_as::<_, models::Todo>(
+            "SELECT * , COUNT(*) OVER () AS total FROM todos LIMIT $1 OFFSET $2;")
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(&self.db_pool)
+            .await;
+        query_result
     }
 
-    pub fn list(&self) -> Result<Vec<models::Todo>, diesel::result::Error> {
-        let result: Result<Vec<models::Todo>, diesel::result::Error> = schema::todos::dsl::todos
-            .select(models::Todo::as_select())
-            .load(&mut self.new_pooled_conn());
-
-        result
-    }
-
-    pub fn update(
+    pub async fn update(
         &self,
         id: i32,
         title: &str,
         content: &str,
-    ) -> Result<models::Todo, diesel::result::Error> {
-        let result = diesel::update(schema::todos::dsl::todos.find(id))
-            .set((schema::todos::dsl::content.eq(content), schema::todos::dsl::title.eq(title)))
-            .returning(models::Todo::as_returning())
-            .get_result(&mut self.new_pooled_conn());
-        result
+    ) -> Result<models::Todo, sqlx::Error> {
+        let query_result = sqlx::query_as::<_, models::Todo>(
+            "UPDATE todos SET title = $1, content = $2 WHERE id = $3 RETURNING * ;",
+        )
+        .bind(title)
+        .bind(content)
+        .bind(id)
+        .fetch_one(&self.db_pool)
+        .await;
+
+        query_result
     }
 
-    fn new_pooled_conn(&self) -> PooledConnection<ConnectionManager<PgConnection>> {
-        self.db_pool.new_connection()
+    pub async fn delete(&self, id: i32) -> Result<PgQueryResult, sqlx::Error> {
+        let query_result = sqlx::query(
+            "DELETE FROM todos WHERE id = $1;",
+        )
+        .bind(id)
+        .execute(&self.db_pool)
+        .await;
+
+        query_result
     }
+
 }

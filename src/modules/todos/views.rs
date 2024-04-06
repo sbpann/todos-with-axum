@@ -6,8 +6,3 @@ pub struct Todo {
     pub title: String,
     pub content: String,
 }
-
-#[derive(Serialize)]
-pub struct Todos {
-    pub todos: Vec<Todo>
-}

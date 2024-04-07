@@ -1,0 +1,1 @@
+INSERT INTO todos (title, content) VALUES ('mock-title','mock-content');

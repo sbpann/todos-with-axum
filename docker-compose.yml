@@ -18,6 +18,8 @@ services:
       - "5432:5432"
     volumes:
       - todo_axum_postgres_data:/var/lib/postgresql/data
+  test:
+    container_name: todo_axum_test
 
 volumes:
   todo_axum_postgres_data: {}

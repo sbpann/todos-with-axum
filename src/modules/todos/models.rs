@@ -1,8 +1,8 @@
-#[derive(sqlx::FromRow)]
+#[derive(Debug, sqlx::FromRow)]
 pub struct Todo {
     pub id: i32,
     pub title: String,
     pub content: String,
     #[sqlx(default)]
-    pub total: Option<i64>
+    pub total: i64
 }

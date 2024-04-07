@@ -16,7 +16,7 @@ pub struct BadRequestErrorMessage {
 
 impl BadRequestErrorMessage {
     fn invalid_type(path: String, expected_type: String) -> BadRequestErrorMessage {
-        let bad_request_error_message = BadRequestErrorMessage {
+        BadRequestErrorMessage {
             code: 400,
             message: "type of the following path is invalid".to_string(),
             path,
@@ -24,19 +24,17 @@ impl BadRequestErrorMessage {
                 "expected type: {}",
                 BadRequestErrorMessage::get_type_description(expected_type)
             ),
-        };
-
-        bad_request_error_message
+        }
     }
 
     fn get_type_description(type_name: String) -> String {
-        if type_name.contains("u") {
+        if type_name.contains('u') {
             return "unsigned interger".to_string();
         }
-        if type_name.contains("i") {
+        if type_name.contains('i') {
             return "interger".to_string();
         }
-        if type_name.contains("f") {
+        if type_name.contains('f') {
             return "number".to_string();
         }
 

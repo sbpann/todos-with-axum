@@ -13,3 +13,12 @@ sqlx = { version = "= 0.7.3", features = [
     "runtime-tokio",
     "tls-rustls",
 ] }
+uuid = { version = "1.8.0", features = ["v4"] }
+futures = { version = "0.3.30", optional = true }
+
+[dev-dependencies]
+temp-env = { version = "0.3.6", features = ["async_closure"] }
+rstest = "0.18.2"
+
+[features]
+async_closure = ["dep:futures"]

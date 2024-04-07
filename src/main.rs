@@ -4,30 +4,25 @@ mod modules;
 mod router;
 mod utils;
 mod views;
+mod tests;
 
 use std::sync::Arc;
 
 use axum::Router;
-use configs::db::new_pg_pool;
+use configs::state;
 use dotenvy::dotenv;
-use sqlx::Postgres;
-
-#[derive(Clone)]
-pub struct ApplicationState {
-    db_pool: sqlx::Pool<Postgres>,
-}
+use utils::app;
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
+    
+    let mut module_list: Vec<(&str, fn() -> Router<Arc<state::AppState>>)>  = vec![];
+    module_list.push(("/todos", router::todos_router));
 
-    let state = Arc::new(ApplicationState {
-        db_pool: new_pg_pool().await,
-    });
-    let app = Router::new()
-        .nest("/todos", router::todos_router())
-        .with_state(state);
+    let router = app::build_router(module_list);
 
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
-    axum::serve(listener, app).await.unwrap();
+    let listener = app::build_listener(app::build_listening_address()).await;
+    axum::serve(listener, router.with_state(state::build_state().await)).await.unwrap();
 }
+

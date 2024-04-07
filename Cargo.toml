@@ -17,6 +17,7 @@ uuid = { version = "1.8.0", features = ["v4"] }
 futures = { version = "0.3.30", optional = true }
 tower-http = { version = "0.5.2" }
 http-body-util = "0.1.1"
+mime = "0.3.17"
 
 [dev-dependencies]
 temp-env = { version = "0.3.6", features = ["async_closure"] }

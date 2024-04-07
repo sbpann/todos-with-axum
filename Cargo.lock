@@ -1733,6 +1733,7 @@ dependencies = [
  "dotenvy",
  "futures",
  "http-body-util",
+ "mime",
  "rstest",
  "serde",
  "sqlx",

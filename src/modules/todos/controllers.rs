@@ -130,7 +130,8 @@ pub async fn put(
     let result = todo_service.find(id).await;
 
     match result {
-        Err(_) => GENERIC_NOT_FOUND_ERROR_RESPONSE.into_response(),
+        Err(sqlx::Error::RowNotFound) => GENERIC_NOT_FOUND_ERROR_RESPONSE.into_response(),
+        Err(_) => GENERIC_INTERNAL_SERVER_ERROR_RESPONSE.into_response(),
         Ok(todo) => {
             let updated_todo = match todo_service
                 .update(todo.id, &request.title, &request.content)
@@ -162,7 +163,8 @@ pub async fn delete(
 
     let todo_service = TodoService::new(state);
     let find_result = match todo_service.find(id).await {
-        Err(_) => return GENERIC_NOT_FOUND_ERROR_RESPONSE.into_response(),
+        Err(sqlx::Error::RowNotFound) => return GENERIC_NOT_FOUND_ERROR_RESPONSE.into_response(),
+        Err(_) => return GENERIC_INTERNAL_SERVER_ERROR_RESPONSE.into_response(),
         Ok(result) => result,
     };
 

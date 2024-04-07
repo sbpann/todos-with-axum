@@ -23,6 +23,7 @@ mod tests {
         let random_title = Uuid::new_v4();
         let random_content = Uuid::new_v4();
         match service.create(format!("title-{}", random_title).as_str(), format!("content-{}", random_content).as_str()).await {
+            
             Err(error) => panic!("{}", error),
             Ok(todo) => {
                 assert_eq!(todo.id, 1);

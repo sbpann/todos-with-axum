@@ -6,7 +6,14 @@ mod tests {
     #[tokio::test]
     #[should_panic]
     async fn build_state_database_err_url_unset() {
-        build_state().await;
+        temp_env::async_with_vars(
+            [(
+                "DATABASE_URL",
+                None::<&str>,
+            )],
+            build_state(),
+        )
+        .await;
     }
 
     #[tokio::test]

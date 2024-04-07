@@ -7,7 +7,7 @@ edition = "2021"
 axum = "0.7.4"
 dotenvy = "0.15.7"
 serde = { version = "1.0.197", features = ["derive"] }
-tokio = { version = "1.36.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.36.0", features = ["full"] }
 sqlx = { version = "= 0.7.3", features = [
     "postgres",
     "runtime-tokio",
@@ -15,10 +15,13 @@ sqlx = { version = "= 0.7.3", features = [
 ] }
 uuid = { version = "1.8.0", features = ["v4"] }
 futures = { version = "0.3.30", optional = true }
+tower-http = { version = "0.5.2" }
+http-body-util = "0.1.1"
 
 [dev-dependencies]
 temp-env = { version = "0.3.6", features = ["async_closure"] }
 rstest = "0.18.2"
+tower = { version = "0.4.13", features = ["util"] }
 
 [features]
 async_closure = ["dep:futures"]

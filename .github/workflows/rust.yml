@@ -35,6 +35,6 @@ jobs:
       run: rm .env
     
     - name: Run tests
-      run: cargo test --verbose
       env:
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      run: cargo test
